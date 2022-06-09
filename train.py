@@ -45,6 +45,7 @@ def train(train_loader, model, optimizer, total_epochs, epoch):
     total_losses = AverageMeter()
     binary_losses = AverageMeter()
     instance_losses = AverageMeter()
+    dist_losses = AverageMeter()
 
     with tqdm(total=len(train_loader), desc=f'Epoch {epoch}/{total_epochs}',
               postfix=dict, mininterval=0.3) as pbar:
@@ -58,11 +59,12 @@ def train(train_loader, model, optimizer, total_epochs, epoch):
             # forward
             net_output = model(image_data)
             # loss
-            total_loss, binary_loss, instance_loss, out = compute_loss(net_output, binary_label, instance_label)
+            total_loss, binary_loss, instance_loss, dist_loss, out = compute_loss(net_output, binary_label, instance_label)
             # update loss
             total_losses.update(total_loss.item(), image_data.size()[0])
             binary_losses.update(binary_loss.item(), image_data.size()[0])
             instance_losses.update(instance_loss.item(), image_data.size()[0])
+            dist_losses.update(dist_loss.item(), image_data.size()[0])
             # mean_iou.update(train_iou, image_data.size()[0])
             #
             optimizer.zero_grad()
@@ -71,23 +73,25 @@ def train(train_loader, model, optimizer, total_epochs, epoch):
 
             pbar.set_postfix(**{'total_loss': total_losses.avg,
                                 'bin_loss': binary_losses.avg,
-                                'ins_loss': instance_losses.avg,})
+                                'ins_loss': instance_losses.avg,
+                                'dist_loss': dist_losses.avg})
                                 # 'iou': train_iou
             pbar.update(1)
 
-            if iter % 500 == 0:
-                train_img_list = []
+            # if iter % 500 == 0:
+            #     train_img_list = []
 
     # return mean_iou.avg
     return None
 
 
-def test(val_loader, model, total_epochs, epoch):
+def val(val_loader, model, total_epochs, epoch):
     model.eval()
     mean_iou = AverageMeter()
     total_losses = AverageMeter()
     binary_losses = AverageMeter()
     instance_losses = AverageMeter()
+    dist_losses = AverageMeter()
 
     with tqdm(total=len(val_loader), desc=f'Epoch {epoch}/{total_epochs}',
               postfix=dict, mininterval=0.3) as pbar:
@@ -96,22 +100,24 @@ def test(val_loader, model, total_epochs, epoch):
                 break
 
             image_data = Variable(batch[0]).type(torch.FloatTensor).to(device)
-            binary_label = Variable(batch[1]).type(torch.FloatTensor).to(device)
+            binary_label = Variable(batch[1]).type(torch.LongTensor).to(device)
             instance_label = Variable(batch[2]).type(torch.FloatTensor).to(device)
             # forward
             net_output = model(image_data)
             # loss
-            total_loss, binary_loss, instance_loss, out = compute_loss(net_output, binary_label, instance_label)
+            total_loss, binary_loss, instance_loss, dist_loss, out = compute_loss(net_output, binary_label, instance_label)
             # update loss
             total_losses.update(total_loss.item(), image_data.size()[0])
             binary_losses.update(binary_loss.item(), image_data.size()[0])
             instance_losses.update(instance_loss.item(), image_data.size()[0])
+            dist_losses.update(dist_loss.item(), image_data.size()[0])
             # mean_iou.update(train_iou, image_data.size()[0])
             #
 
             pbar.set_postfix(**{'total_loss': total_losses.avg,
                                 'bin_loss': binary_losses.avg,
-                                'ins_loss': instance_losses.avg})
+                                'ins_loss': instance_losses.avg,
+                                'dist_loss': dist_losses.avg})
                                 # 'iou': train_iou})
 
             pbar.update(1)
@@ -122,7 +128,7 @@ def test(val_loader, model, total_epochs, epoch):
 
 def save_model(save_path, epoch, model):
     save_name = f'{save_path}/{epoch}_checkpoint.pth'
-    torch.save(model, save_name)
+    torch.save(model.state_dict(), save_name)
     print(f'model is saved: {save_name}')
 
 
@@ -133,9 +139,8 @@ def main():
 
     val_mode = True
     learning_rate = 5e-5
-    batch_size = 64
-    epochs = 10
-
+    batch_size = 8
+    epochs = 200
     # model save path
     save_path = f'{cur_dir}/data/rst'
     os.makedirs(save_path, exist_ok=True)
@@ -163,7 +168,7 @@ def main():
         # print(f'train iou: {train_iou}')
 
         if val_mode:
-            val_iou = test(val_loader, model, epochs, epoch)
+            val_iou = val(val_loader, model, epochs, epoch)
             # print(f'val iou: {val_iou}')
 
         if (epoch+1) % 5 == 0:

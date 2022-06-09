@@ -89,4 +89,4 @@ def compute_loss(net_output, binary_label, instance_label):
     #     union = PR + GT - TP
     #     iou += TP / union
     # iou = iou / batch_size
-    return total_loss, binary_loss, instance_loss, out
+    return total_loss, binary_loss, instance_loss, dist_loss,out
