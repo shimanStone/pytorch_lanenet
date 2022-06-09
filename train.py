@@ -127,35 +127,43 @@ def save_model(save_path, epoch, model):
 
 
 def main():
-    args = parse_args()
+
+
+    colab = '_colab' if torch.cuda.is_available() else ''
+
+    val_mode = True
+    learning_rate = 5e-5
+    batch_size = 64
+    epochs = 10
+
     # model save path
-    save_path = args.save
+    save_path = f'{cur_dir}/data/rst'
     os.makedirs(save_path, exist_ok=True)
     # dataset_file.txt
-    train_dataset_file = f'{args.dataset}/train.txt'
-    val_dataset_file = f'{args.dataset}/val.txt'
+    train_dataset_file = f'{cur_dir}/data/train{colab}.txt'
+    val_dataset_file = f'{cur_dir}/data/val{colab}.txt'
     # dataloader
     transform = transforms.Compose([Rescale((256, 512))])
     train_dataset = LaneDataSet(train_dataset_file, transform=transform)
-    train_loader = DataLoader(train_dataset, batch_size=args.bs, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    if args.val:
+    if val_mode:
         val_dataset = LaneDataSet(val_dataset_file, transform=transform)
-        val_loader = DataLoader(val_dataset, batch_size=args.bs, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
     model = LaneNet()
     model.to(device)
     # optim
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    print(f'Total || {args.epochs} Epochs, {len(train_dataset)} Training samples\n')
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    print(f'Total || {epochs} Epochs, {len(train_dataset)} Training samples\n')
 
-    for epoch in range(0, args.epochs):
+    for epoch in range(0, epochs):
         print(f'Epoch {epoch}')
-        train_iou = train(train_loader, model, optimizer, args.epochs, epoch)
+        train_iou = train(train_loader, model, optimizer, epochs, epoch)
         # print(f'train iou: {train_iou}')
 
-        if args.val:
-            val_iou = test(val_loader, model, args.epochs, epoch)
+        if val_mode:
+            val_iou = test(val_loader, model, epochs, epoch)
             # print(f'val iou: {val_iou}')
 
         if (epoch+1) % 5 == 0:
