@@ -23,7 +23,7 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 if __name__ == '__main__':
 
-    model_path = r'E:\ml_code\pytorch_lanenet\data\rst\9_checkpoint.pth'
+    model_path = r'E:\ml_code\pytorch_lanenet\data\rst\44_checkpoint.pth'
 
     image_path = r'E:\data\lanenet\testing\gt_image\0000.png'
     resize_height, resize_width = 256, 512
@@ -33,10 +33,10 @@ if __name__ == '__main__':
         transforms.ToTensor()
     ])
 
-    # model = LaneNet()
-    # state_dict = torch.load(model_path, map_location=device)
-    # model.load_state_dict(state_dict)
-    model = torch.load(model_path, map_location=device)
+    model = LaneNet()
+    state_dict = torch.load(model_path, map_location=device)
+    model.load_state_dict(state_dict)
+    # model = torch.load(model_path, map_location=device)
     model.eval()
     model.to(device)
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     out_root = r'E:\ml_code\pytorch_lanenet\data\pred'
     cv2.imwrite(f'{out_root}/input.jpg', input)
-    cv2.imwrite(f'{out_root}/instance_output.jpg', instance_pred.transpose((1,2,0)))
+    # cv2.imwrite(f'{out_root}/instance_output.jpg', instance_pred.transpose((1,2,0)))
     cv2.imwrite(f'{out_root}/binary_output.jpg', binary_pred)
 
     print('ok')
